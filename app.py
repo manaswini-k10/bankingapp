@@ -37,28 +37,33 @@ class Tx(db.Model):
 
 # ---------- Helpers ----------
 def seed_demo():
-    # Create tables if missing
-    db.create_all()
+    """Create demo users + accounts only if missing."""
+    from your_models_module_if_separate import User, Account  # or from app import User, Account if same file
 
-    # Only seed if no users exist yet
-    if User.query.count() > 0:
-        return
-
-    def mkuser(username, checking, savings):
+    def mkuser(username, checking_cents, savings_cents):
+        u = User.query.filter_by(username=username).first()
+        if u:
+            return u  # already there
         u = User(username=username)
-        u.set_password("password")
+        u.set_password("password")  # whatever your helper is
         db.session.add(u)
-        db.session.flush()
-        db.session.add(Account(user_id=u.id, type="checking", balance=checking))
-        db.session.add(Account(user_id=u.id, type="savings", balance=savings))
-        db.session.commit()
+        db.session.flush()  # get u.id
+        db.session.add(Account(user_id=u.id, type="checking", balance_cents=checking_cents))
+        db.session.add(Account(user_id=u.id, type="savings", balance_cents=savings_cents))
+        return u
 
     try:
         mkuser("alice", 150_000, 20_000)
-        mkuser("bob", 50_000, 5_000)
+        mkuser("bob",    80_000,  5_000)
+        db.session.commit()
     except IntegrityError:
-        db.session.rollback()
+        db.session.rollback()  # ignore duplicates gracefully
 
+# call this only when asked
+if os.environ.get("SEED_DEMO", "true").lower() in ("1","true","yes"):
+    with app.app_context():
+        db.create_all()
+        seed_demo()
 def cents_to_str(cents):
     sign = "-" if cents < 0 else ""
     cents = abs(cents)
@@ -174,4 +179,5 @@ with app.app_context():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
 
