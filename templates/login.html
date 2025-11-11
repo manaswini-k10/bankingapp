@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Banking App — Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { color-scheme: dark; }
+    body { font-family: system-ui, Arial, sans-serif; margin: 0; background: #0e0f17; color: #eef1f7; }
+    .wrap { max-width: 520px; margin: 10vh auto; padding: 28px; background: #171a23; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+    h1 { margin: 0 0 8px; }
+    .note { color:#aeb6d0; margin-bottom:14px; }
+    label { display:block; margin:10px 0 6px;}
+    input { width:100%; padding:12px 14px; border-radius:10px; border:1px solid #2b3041; background:#0e111a; color:#eef1f7; }
+    .cta { margin-top:16px; padding:12px 18px; border-radius:10px; border:none; background:#5964ff; color:#fff; font-weight:700; cursor:pointer; width:100%; }
+    .flash { margin-top:10px; color:#ffb4b4; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Secure Bank 🔐</h1>
+    <p class="note">Demo users: <b>alice</b> / <b>bob</b> with password <b>password</b>.</p>
+    <form action="/start" method="post" autocomplete="off">
+      <label for="username">Username</label>
+      <input id="username" name="username" required />
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" required />
+      <button class="cta" type="submit">Login</button>
+    </form>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash">{{ messages[0] }}</div>
+      {% endif %}
+    {% endwith %}
+  </div>
+</body>
+</html>

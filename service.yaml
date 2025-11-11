@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bank-app-svc
+  labels:
+    app: bank-app
+spec:
+  selector:
+    app: bank-app
+  type: NodePort   # change to LoadBalancer if supported
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5000
+      nodePort: 30080
