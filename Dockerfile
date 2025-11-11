@@ -15,5 +15,7 @@ RUN python -m pip install --upgrade pip && pip install -r requirements.txt
 COPY . /app
 
 EXPOSE 5000
-ENV GUNICORN_CMD_ARGS="--bind 0.0.0.0:5000 --workers 2 --threads 4 --timeout 60"
+ENV GUNICORN_CMD_ARGS="--bind 0.0.0.0:5000 --workers 2 --threads 4 --timeout 60 --preload"
+
 CMD ["gunicorn", "app:app"]
+
