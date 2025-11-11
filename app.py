@@ -37,33 +37,24 @@ class Tx(db.Model):
 
 # ---------- Helpers ----------
 def seed_demo():
-    """Create demo users + accounts only if missing."""
-    from your_models_module_if_separate import User, Account  # or from app import User, Account if same file
+    # Only seed if missing; don’t crash if a race inserts first.
+    if not User.query.filter_by(username="alice").first():
+        try:
+            mkuser("alice", 150_000, 20_000)  # $1,500.00 / $200.00
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+    if not User.query.filter_by(username="bob").first():
+        try:
+            mkuser("bob",   80_000, 10_000)   # $800.00 / $100.00
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
 
-    def mkuser(username, checking_cents, savings_cents):
-        u = User.query.filter_by(username=username).first()
-        if u:
-            return u  # already there
-        u = User(username=username)
-        u.set_password("password")  # whatever your helper is
-        db.session.add(u)
-        db.session.flush()  # get u.id
-        db.session.add(Account(user_id=u.id, type="checking", balance_cents=checking_cents))
-        db.session.add(Account(user_id=u.id, type="savings", balance_cents=savings_cents))
-        return u
+with app.app_context():
+    db.create_all()
+    seed_demo()
 
-    try:
-        mkuser("alice", 150_000, 20_000)
-        mkuser("bob",    80_000,  5_000)
-        db.session.commit()
-    except IntegrityError:
-        db.session.rollback()  # ignore duplicates gracefully
-
-# call this only when asked
-if os.environ.get("SEED_DEMO", "true").lower() in ("1","true","yes"):
-    with app.app_context():
-        db.create_all()
-        seed_demo()
 def cents_to_str(cents):
     sign = "-" if cents < 0 else ""
     cents = abs(cents)
@@ -179,5 +170,6 @@ with app.app_context():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
 
 
