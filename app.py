@@ -2,6 +2,7 @@ import os
 import datetime as dt
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash, check_password_hash
 
 DB_URL = os.environ.get("DATABASE_URL", "sqlite:///bank.db")
@@ -36,21 +37,27 @@ class Tx(db.Model):
 
 # ---------- Helpers ----------
 def seed_demo():
+    # Create tables if missing
+    db.create_all()
+
+    # Only seed if no users exist yet
     if User.query.count() > 0:
         return
-    # Create two demo users with two accounts each
-    def mkuser(name, chk_cents, sav_cents):
-        u = User(username=name, password_hash=generate_password_hash("password"))
+
+    def mkuser(username, checking, savings):
+        u = User(username=username)
+        u.set_password("password")
         db.session.add(u)
         db.session.flush()
-        db.session.add_all([
-            Account(user_id=u.id, name="Checking", balance=chk_cents),
-            Account(user_id=u.id, name="Savings", balance=sav_cents),
-        ])
-        return u
-    mkuser("alice", 150_000, 20_000)   # $1,500.00 checking, $200.00 savings
-    mkuser("bob",   80_000,  5_000)
-    db.session.commit()
+        db.session.add(Account(user_id=u.id, type="checking", balance=checking))
+        db.session.add(Account(user_id=u.id, type="savings", balance=savings))
+        db.session.commit()
+
+    try:
+        mkuser("alice", 150_000, 20_000)
+        mkuser("bob", 50_000, 5_000)
+    except IntegrityError:
+        db.session.rollback()
 
 def cents_to_str(cents):
     sign = "-" if cents < 0 else ""
@@ -167,3 +174,4 @@ with app.app_context():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
