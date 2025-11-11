@@ -36,24 +36,35 @@ class Tx(db.Model):
     memo = db.Column(db.String(140), default="")
 
 # ---------- Helpers ----------
-def seed_demo():
-    # Only seed if missing; don’t crash if a race inserts first.
-    if not User.query.filter_by(username="alice").first():
-        try:
-            mkuser("alice", 150_000, 20_000)  # $1,500.00 / $200.00
-            db.session.commit()
-        except IntegrityError:
-            db.session.rollback()
-    if not User.query.filter_by(username="bob").first():
-        try:
-            mkuser("bob",   80_000, 10_000)   # $800.00 / $100.00
-            db.session.commit()
-        except IntegrityError:
-            db.session.rollback()
 
-with app.app_context():
-    db.create_all()
-    seed_demo()
+def seed_demo():
+    # create tables first
+    with app.app_context():
+        db.create_all()
+
+        def mkuser(username, checking_cents, savings_cents):
+            # try insert; if duplicate happens, ignore safely
+            if not User.query.filter_by(username=username).first():
+                u = User(username=username)
+                u.set_password("pass123")  # or whatever you used
+                db.session.add(u)
+                try:
+                    db.session.flush()
+                except IntegrityError:
+                    db.session.rollback()
+                    return  # another worker beat us
+
+                checking = Account(user_id=u.id, type="checking", balance_cents=checking_cents)
+                savings  = Account(user_id=u.id, type="savings",  balance_cents=savings_cents)
+                db.session.add_all([checking, savings])
+                try:
+                    db.session.commit()
+                except IntegrityError:
+                    db.session.rollback()
+
+        mkuser("alice", 150_000, 20_000)
+        mkuser("bob",    75_000, 10_000)
+
 
 def cents_to_str(cents):
     sign = "-" if cents < 0 else ""
@@ -170,6 +181,7 @@ with app.app_context():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
 
 
 
