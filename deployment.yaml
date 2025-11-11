@@ -15,3 +15,8 @@ spec:
       volumes:
       - name: bank-data
         emptyDir: {}        # survives container restarts
+        env:
+         - name: SEED_DEMO
+           value: "false"
+
+
