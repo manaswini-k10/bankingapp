@@ -1,23 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bank-app-deploy
+  labels:
+    app: bank-app
 spec:
+  replicas: 1                   # SQLite -> single replica to avoid seeding/race issues
+  revisionHistoryLimit: 2
+  progressDeadlineSeconds: 120
+  selector:
+    matchLabels:
+      app: bank-app
   template:
+    metadata:
+      labels:
+        app: bank-app
     spec:
       containers:
-      - name: bank-app
-        image: manaswinik10/bank-app:v3  # <-- you will build this next
-        env:
-        - name: DATABASE_URL
-          value: "sqlite:////data/app.db"
-        - name: SEED_ON_START
-          value: "true"     # after first successful deploy -> change to "false"
-        volumeMounts:
-        - name: bank-data
-          mountPath: /data
-      volumes:
-      - name: bank-data
-        emptyDir: {}        # survives container restarts
-        env:
-         - name: SEED_DEMO
-           value: "false"
-
-
-
+        - name: bank-app
+          image: manaswinik10/bank-app:latest   # or :v2 that you built
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          env:
+            - name: APP_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: bank-secret
+                  key: secret
+            - name: SEED_ON_START        # see app.py fix below
+              value: "true"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 5000
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bank-secret
+type: Opaque
+stringData:
+  secret: "replace-me-with-a-strong-random-value"
