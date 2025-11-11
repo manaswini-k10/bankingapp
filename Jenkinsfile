@@ -3,7 +3,7 @@ pipeline {
 
   environment {
     REGISTRY = "docker.io"
-    IMAGE_NAME = "your-dockerhub-username/bank-app"
+    IMAGE_NAME = "manaswinik10/bank-app"
     IMAGE_TAG = "latest"
   }
 
@@ -49,3 +49,4 @@ pipeline {
     failure { echo 'Build or deployment failed.' }
   }
 }
+
