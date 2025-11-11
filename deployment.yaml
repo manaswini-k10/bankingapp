@@ -3,7 +3,7 @@ spec:
     spec:
       containers:
       - name: bank-app
-        image: manaswinik10/bank-app:v2  # <-- you will build this next
+        image: manaswinik10/bank-app:v3  # <-- you will build this next
         env:
         - name: DATABASE_URL
           value: "sqlite:////data/app.db"
@@ -18,5 +18,6 @@ spec:
         env:
          - name: SEED_DEMO
            value: "false"
+
 
 
