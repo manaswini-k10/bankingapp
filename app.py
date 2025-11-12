@@ -53,39 +53,33 @@ def seed_demo():
     with app.app_context():
         db.create_all()
 
-       def mkuser(username, checking_cents, savings_cents):
-    # try insert; if duplicate happens, ignore safely
-    if not User.query.filter_by(username=username).first():
-        u = User(username=username)
-        u.set_password("pass123")  # or whatever you used
-        db.session.add(u)
-        try:
-            db.session.flush()
-        except IntegrityError:
-            db.session.rollback()
-            return  # another worker beat us
-
-        # create accounts using fields 'name' and 'balance' (match Account model)
-        checking = Account(user_id=u.id, name="checking", balance=checking_cents)
-        savings = Account(user_id=u.id, name="savings", balance=savings_cents)
-        db.session.add_all([checking, savings])
-        try:
-            db.session.commit()
-        except IntegrityError:
-            db.session.rollback()
-             return  # another worker beat us
-
-                checking = Account(user_id=u.id, type="checking", balance_cents=checking_cents)
-                savings  = Account(user_id=u.id, type="savings",  balance_cents=savings_cents)
-                db.session.add_all([checking, savings])
-                try:
-                    db.session.commit()
-                except IntegrityError:
-                    db.session.rollback()
-
-        mkuser("alice", 150_000, 20_000)
-        mkuser("bob",    75_000, 10_000)
-
+       def mkuser(username, checking_cents, savings_cents, plain_password="pass123"):
+           existing = User.query.filter_by(username=username).first()
+           if existing:
+               existing.balance = getattr(existing, "balance", 0)  # optional
+               existing.limit = getattr(existing, "limit", 0)     # optional
+               if not getattr(existing, "password_hash", None):
+                   existing.set_password(plain_password)
+                db.session.add(existing)
+                return existing
+                   # Create new user
+           u = User(username=username)
+           u.set_password(plain_password)
+           db.session.add(u)
+           try:
+               db.session.flush()
+           except Exception:
+               db.session.rollback()
+               raise
+           checking = Account(user_id=u.id, name="checking", balance=checking_cents)
+           savings = Account(user_id=u.id, name="savings", balance=savings_cents)
+           db.session.add_all([checking, savings])
+           try:
+               db.session.commit()
+           except Exception:
+               db.session.rollback()
+               raise
+            return u
 
 def cents_to_str(cents):
     sign = "-" if cents < 0 else ""
@@ -202,6 +196,7 @@ with app.app_context():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
 
 
 
