@@ -96,7 +96,7 @@ def healthz():
 
 @app.route("/", methods=["GET"])
 def home():
-    return render_template("registration.html")
+    return render_template("login.html")
 
 @app.route("/start", methods=["POST"])
 def start():
@@ -136,7 +136,7 @@ def dashboard():
             "amount": cents_to_str(tx.amount),
             "memo": tx.memo or "",
         }
-    return render_template("greetings.html",
+    return render_template("dashboard.html",
                            name=session["username"],
                            accounts=acct_data,
                            txs=[label(t) for t in txs])
@@ -196,6 +196,7 @@ with app.app_context():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
 
 
 
