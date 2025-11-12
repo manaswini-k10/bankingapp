@@ -21,6 +21,17 @@ class User(db.Model):
     password_hash = db.Column(db.String(200), nullable=False)
     accounts = db.relationship("Account", backref="user", lazy=True)
 
+    # --- password helpers ---
+    def set_password(self, password: str) -> None:
+        """Hash and store a password."""
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        """Return True if `password` matches the stored hash."""
+        if not self.password_hash:
+            return False
+        return check_password_hash(self.password_hash, password)
+
 class Account(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
@@ -42,17 +53,27 @@ def seed_demo():
     with app.app_context():
         db.create_all()
 
-        def mkuser(username, checking_cents, savings_cents):
-            # try insert; if duplicate happens, ignore safely
-            if not User.query.filter_by(username=username).first():
-                u = User(username=username)
-                u.set_password("pass123")  # or whatever you used
-                db.session.add(u)
-                try:
-                    db.session.flush()
-                except IntegrityError:
-                    db.session.rollback()
-                    return  # another worker beat us
+       def mkuser(username, checking_cents, savings_cents):
+    # try insert; if duplicate happens, ignore safely
+    if not User.query.filter_by(username=username).first():
+        u = User(username=username)
+        u.set_password("pass123")  # or whatever you used
+        db.session.add(u)
+        try:
+            db.session.flush()
+        except IntegrityError:
+            db.session.rollback()
+            return  # another worker beat us
+
+        # create accounts using fields 'name' and 'balance' (match Account model)
+        checking = Account(user_id=u.id, name="checking", balance=checking_cents)
+        savings = Account(user_id=u.id, name="savings", balance=savings_cents)
+        db.session.add_all([checking, savings])
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+             return  # another worker beat us
 
                 checking = Account(user_id=u.id, type="checking", balance_cents=checking_cents)
                 savings  = Account(user_id=u.id, type="savings",  balance_cents=savings_cents)
@@ -181,6 +202,7 @@ with app.app_context():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
 
 
 
