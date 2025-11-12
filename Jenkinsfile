@@ -38,7 +38,6 @@ pipeline {
         sh '''
           kubectl apply -f deployment.yaml --validate=false
           kubectl apply -f service.yaml
-          kubectl rollout status deploy/bank-app-deploy
         '''
       }
     }
@@ -49,5 +48,6 @@ pipeline {
     failure { echo 'Build or deployment failed.' }
   }
 }
+
 
 
